@@ -60,54 +60,44 @@ app.get('/api/exercise/users', (req, res) => {
 });
 
 // Find all exercises logged by userId
-app.get('/api/exercise/log', (req, res) => {
-  console.log(req.query.userId);
-  Exercise.findById(req.query.userId, 'logs', (err, logs) => {
+// TODO: 2. retrieve part of logs if from, to, limit are added in req.query
+
+app.get('/api/exercise/log', async (req, res) => {
+  Exercise.findById(req.query.userId, 'username logs', (err, logs) => {
     if (err) {
       console.error(err);
       res.sendStatus(500);
     }
-    res.json(logs);
+    var userLog = logs._doc;
+    var logCount = {count: logs.logs.length};
+    res.json({...userLog, ...logCount});
+    })
   })
 
-});
+  
 // Add exercise
 app.post('/api/exercise/add', (req, res) => {
   const logInput = {
     description: req.body.description,
     duration: req.body.duration,
-    date: req.body.date
+    // date: req.body.date ? new Date(req.body.date).toDateString() : new Date().toDateString()
+    date: req.body.date ? req.body.date : new Date()
   }
 
+  console.log(logInput);
   Exercise.findOne({_id: req.body.userId}, (err, user) => {
     if (err) {
       console.error(err);
       res.sendStatus(500);
     }
     user.logs.push(logInput);
+    user.markModified('date');
     user.save((err) =>{
       if (err) return console.error(err);
     });
     res.json(user);
   });
-  // res.sendStatus(200);
-  // Exercise.update({
-  //   _id: req.body.userId
-  // }, {
-  //   $push: {
-  //     $logs: logInput
-  //   }
-  // }, (err) => {
-  //   if (err) {
-  //     console.error(err);
-  //     res.sendStatus(500);
-  //   }
-  // });
 });
-
-
-
-
 
 const listener = app.listen(process.env.PORT || 8000, () => {
   console.log('Your app is listening on port ' + listener.address().port)

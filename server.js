@@ -49,7 +49,6 @@ app.post('/api/exercise/new-user', (req, res) => {
 
 // Show all users
 app.get('/api/exercise/users', (req, res) => {
-
   Exercise.find({}, 'username', (err, users) => {
     if (err) {
       console.error(err);
@@ -60,19 +59,27 @@ app.get('/api/exercise/users', (req, res) => {
 });
 
 // Find all exercises logged by userId
-// TODO: 2. retrieve part of logs if from, to, limit are added in req.query
-
+// TODO: Add username and count object
 app.get('/api/exercise/log', async (req, res) => {
-  Exercise.findById(req.query.userId, 'username logs', (err, logs) => {
+
+  Exercise.findById(req.query.userId, (err, result) => {
     if (err) {
       console.error(err);
       res.sendStatus(500);
     }
-    var userLog = logs._doc;
-    var logCount = {count: logs.logs.length};
-    res.json({...userLog, ...logCount});
-    })
+    var userLog = result
+    var username = result.username;
+    console.log(username)
+    if (req.query.from && req.query.to){
+      userLog = result.logs.filter(log => log.date >= new Date(req.query.from) && log.date <= new Date(req.query.to))
+    }
+    if (req.query.limit)
+      userLog = userLog.slice(0, req.query.limit);
+    res.json(userLog);
   })
+
+
+})
 
   
 // Add exercise

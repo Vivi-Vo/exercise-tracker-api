@@ -29,7 +29,7 @@ const exerciseSchema = new mongoose.Schema({
   logs: [{
     description: String,
     duration: Number,
-    date: Date
+    date: String
   }]
 });
 
@@ -59,21 +59,23 @@ app.get('/api/exercise/users', (req, res) => {
 });
 
 // Find all exercises logged by userId
-//FIX: 1. return logs in proper format when only userId is sent 
-// 2. Fix date format
 app.get('/api/exercise/log', async (req, res) => {
 
-  Exercise.findById(req.query.userId, 'username logs', (err, result) => {
+  Exercise.findById(req.query.userId, {"logs._id": 0}, (err, result) => {
     if (err) {
       console.error(err);
       res.sendStatus(500);
     }
-    var logs = result;
+    var logs = result.logs;
+
     if (req.query.from && req.query.to){
-      logs = result.logs.filter(log => log.date >= new Date(req.query.from) && log.date <= new Date(req.query.to))
+      logs = logs.filter(log => log.date >= new Date(req.query.from) && log.date <= new Date(req.query.to))
     }
     if (req.query.limit)
       logs = logs.slice(0, req.query.limit);
+    
+    logs.forEach((el) => {el.date = new Date(el.date).toDateString()});
+    
     res.json({ ...{username: result.username},...{count: logs.length}, logs});
   })
 

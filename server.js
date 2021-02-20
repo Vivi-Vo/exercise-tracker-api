@@ -59,23 +59,22 @@ app.get('/api/exercise/users', (req, res) => {
 });
 
 // Find all exercises logged by userId
-// TODO: Add username and count object
+//FIX: 1. return logs in proper format when only userId is sent 
+// 2. Fix date format
 app.get('/api/exercise/log', async (req, res) => {
 
-  Exercise.findById(req.query.userId, (err, result) => {
+  Exercise.findById(req.query.userId, 'username logs', (err, result) => {
     if (err) {
       console.error(err);
       res.sendStatus(500);
     }
-    var userLog = result
-    var username = result.username;
-    console.log(username)
+    var logs = result;
     if (req.query.from && req.query.to){
-      userLog = result.logs.filter(log => log.date >= new Date(req.query.from) && log.date <= new Date(req.query.to))
+      logs = result.logs.filter(log => log.date >= new Date(req.query.from) && log.date <= new Date(req.query.to))
     }
     if (req.query.limit)
-      userLog = userLog.slice(0, req.query.limit);
-    res.json(userLog);
+      logs = logs.slice(0, req.query.limit);
+    res.json({ ...{username: result.username},...{count: logs.length}, logs});
   })
 
 

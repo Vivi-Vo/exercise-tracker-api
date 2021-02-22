@@ -26,10 +26,10 @@ db.once("open", function () {
 
 const exerciseSchema = new mongoose.Schema({
   username: String,
-  logs: [{
+  log: [{
     description: String,
     duration: Number,
-    date: String
+    date: Date
   }]
 });
 
@@ -61,49 +61,66 @@ app.get('/api/exercise/users', (req, res) => {
 // Find all exercises logged by userId
 app.get('/api/exercise/log', async (req, res) => {
 
-  Exercise.findById(req.query.userId, {"logs._id": 0}, (err, result) => {
+  Exercise.findById(req.query.userId, {
+    "logs._id": 0
+  }, (err, result) => {
     if (err) {
       console.error(err);
       res.sendStatus(500);
     }
-    var logs = result.logs;
+    var log = result.log;
 
-    if (req.query.from && req.query.to){
-      logs = logs.filter(log => log.date >= new Date(req.query.from) && log.date <= new Date(req.query.to))
+    if (req.query.from && req.query.to) {
+      log = log.filter(log => log.date >= new Date(req.query.from) && log.date <= new Date(req.query.to))
     }
     if (req.query.limit)
-      logs = logs.slice(0, req.query.limit);
-    
-    logs.forEach((el) => {el.date = new Date(el.date).toDateString()});
-    
-    res.json({ ...{username: result.username},...{count: logs.length}, logs});
+    log = log.slice(0, req.query.limit);
+
+    log.forEach((el) => {
+      el.date = new Date(el.date).toLocaleDateString();
+    });
+
+    res.json({
+      ...{
+        username: result.username
+      },
+      ...{
+        count: log.length
+      },
+      log
+    });
   })
 
 
 })
 
-  
 // Add exercise
 app.post('/api/exercise/add', (req, res) => {
   const logInput = {
-    description: req.body.description,
-    duration: req.body.duration,
-    // date: req.body.date ? new Date(req.body.date).toDateString() : new Date().toDateString()
-    date: req.body.date ? req.body.date : new Date()
+    date: req.body.date ? new Date(req.body.date).toDateString() : new Date().toDateString(),
+    duration: parseInt(req.body.duration),
+    description: req.body.description
   }
-
-  console.log(logInput);
-  Exercise.findOne({_id: req.body.userId}, (err, user) => {
+  Exercise.findOne({
+    _id: req.body.userId
+  }, (err, user) => {
     if (err) {
       console.error(err);
       res.sendStatus(500);
     }
-    user.logs.push(logInput);
+    user.log.push(logInput);
     user.markModified('date');
-    user.save((err) =>{
+    user.save((err) => {
       if (err) return console.error(err);
     });
-    res.json(user);
+
+    res.send({
+      ...{
+        _id: req.body.userId,
+        username: user.username
+      },
+      ...logInput
+    });
   });
 });
 
